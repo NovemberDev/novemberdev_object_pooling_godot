@@ -1,0 +1,161 @@
+[gd_scene load_steps=4 format=2]
+
+[sub_resource type="GDScript" id=1]
+script/source = "extends Spatial
+
+var timings = {}
+var instances = 0
+
+var instance_per_axis = 7
+var instance_count
+
+func _ready():
+	if Globals.use_object_pooling:
+		$TOGGLE.text = \"Disable Object Pooling\" 
+	else:
+		$TOGGLE.text = \"Enable Object Pooling\" 
+	$TOGGLE.connect(\"pressed\", self, \"on_object_pooling\")
+	instance_count = pow(instance_per_axis*2, 3)
+	for x in range(-instance_per_axis, instance_per_axis):
+		for y in range(-instance_per_axis, instance_per_axis):
+			for z in range(-instance_per_axis, instance_per_axis):
+				var instance
+				
+				if Globals.use_object_pooling:
+					instance = ObjectPooling.load_from_pool(\"res://scenes/\" + random_scene() + \".tscn\")
+				else:
+					instance = load(\"res://scenes/\" + random_scene() + \".tscn\").instance()
+					
+				$ENTITIES.add_child(instance)
+				instance.global_transform.origin = Vector3(x, y, z) * 10.0
+				instance.name = \"[%s, %s, %s]\" % [x, y, z]
+				timings[instance] = rand_range(2, 5)
+				instances += 1
+
+func _process(delta):
+	print_info()
+	for instance in timings.keys():
+		timings[instance] -= delta
+		if timings[instance] < 0.0:
+			
+			if Globals.use_object_pooling:
+				ObjectPooling.queue_free_instance(instance)
+			else:
+				instance.queue_free()
+				
+			timings.erase(instance)
+			instances -= 1
+	yield(get_tree(), \"idle_frame\")
+	if instances < instance_count:
+		for i in range(instance_count - instances):
+			var instance
+			
+			if Globals.use_object_pooling:
+				instance = ObjectPooling.load_from_pool(\"res://scenes/\" + random_scene() + \".tscn\")
+			else:
+				instance = load(\"res://scenes/\" + random_scene() + \".tscn\").instance()
+			
+			$ENTITIES.add_child(instance)
+			instance.global_transform.origin = Vector3(rand_range(-5, 5), rand_range(-5, 5), rand_range(-5, 5)) * 10.0
+			instance.name = \"[%s, %s, %s]\" % [instance.global_transform.origin.x, instance.global_transform.origin.y, instance.global_transform.origin.z]
+			timings[instance] = rand_range(2, 5)
+			instances += 1
+			
+func random_scene():
+	randomize()
+	return [\"PRISM\", \"CUBE\", \"SPHERE\"][randi()%3]
+
+func on_object_pooling():
+	Globals.use_object_pooling = !Globals.use_object_pooling
+	get_tree().reload_current_scene()
+	ObjectPooling.reset()
+	
+func print_info():
+	var info = \"Stats:\"
+	info += \"\\nFPS:               %s\" % [Performance.get_monitor(Performance.TIME_FPS)]
+	info += \"\\nDraw-Calls:        %s\" % [VisualServer.get_render_info(VisualServer.INFO_DRAW_CALLS_IN_FRAME)]
+	info += \"\\nObjects:           %s\" % [VisualServer.get_render_info(VisualServer.INFO_OBJECTS_IN_FRAME)]
+	info += \"\\nMaterial-Changes:  %s\" % [VisualServer.get_render_info(VisualServer.INFO_MATERIAL_CHANGES_IN_FRAME)]
+	info += \"\\nShader-Changes:    %s\" % [VisualServer.get_render_info(VisualServer.INFO_SHADER_CHANGES_IN_FRAME)]
+	info += \"\\nSurface-Changes:   %s\" % [VisualServer.get_render_info(VisualServer.INFO_SURFACE_CHANGES_IN_FRAME)]
+	info += \"\\nVertices:          %s\" % [VisualServer.get_render_info(VisualServer.INFO_VERTICES_IN_FRAME)]
+	$PANEL/INFO.text = info
+"
+
+[sub_resource type="Animation" id=2]
+resource_name = "default"
+length = 10.0
+loop = true
+tracks/0/type = "value"
+tracks/0/path = NodePath("Camera:translation")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 5, 10 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 0,
+"values": [ Vector3( 0, 25, 37 ), Vector3( -36, 25, -3 ), Vector3( 0, 25, 37 ) ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("Camera:rotation_degrees")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0, 5, 10 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 0,
+"values": [ Vector3( -40, 0, 0 ), Vector3( -40, -135, 0 ), Vector3( -40, 0, 0 ) ]
+}
+
+[sub_resource type="StyleBoxFlat" id=3]
+bg_color = Color( 0, 0, 0, 0.439216 )
+
+[node name="WORLD" type="Spatial"]
+script = SubResource( 1 )
+
+[node name="Camera" type="Camera" parent="."]
+transform = Transform( -0.707107, 0.454519, -0.541675, 0, 0.766044, 0.642788, 0.707107, 0.454519, -0.541675, -36, 25, -3 )
+current = true
+fov = 120.0
+far = 8192.0
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+autoplay = "default"
+anims/default = SubResource( 2 )
+
+[node name="ENTITIES" type="Spatial" parent="."]
+
+[node name="TOGGLE" type="Button" parent="."]
+margin_left = 13.4848
+margin_top = 11.9865
+margin_right = 194.485
+margin_bottom = 31.9865
+text = "DISABLE OBJECT POOLING"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="PANEL" type="Panel" parent="."]
+margin_left = 13.0
+margin_top = 40.0
+margin_right = 194.0
+margin_bottom = 248.0
+custom_styles/panel = SubResource( 3 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="INFO" type="RichTextLabel" parent="PANEL"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 11.0
+margin_top = 8.0
+margin_right = -11.0
+margin_bottom = -8.0
+__meta__ = {
+"_edit_use_anchors_": false
+}

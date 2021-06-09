@@ -1,0 +1,9 @@
+{
+	"scenes": {
+		"res://scenes/CUBE.tscn": 1200,
+		"res://scenes/PRISM.tscn": 1200,
+		"res://scenes/SPHERE.tscn": 1200,
+		"res://scenes/WORLD.tscn": 0
+	},
+	"DEBUG": true
+}

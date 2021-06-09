@@ -1,0 +1,36 @@
+[gd_scene load_steps=4 format=2]
+
+[sub_resource type="SphereMesh" id=1]
+radial_segments = 8
+rings = 8
+
+[sub_resource type="SpatialMaterial" id=3]
+resource_local_to_scene = true
+
+[sub_resource type="GDScript" id=2]
+script/source = "extends MeshInstance
+
+var target_rotation = Vector3.ZERO
+
+func _ready():
+	random_rotation()
+
+func on_object_pooling_reset(activate):
+	if !activate:
+		random_rotation()
+
+func _process(delta):
+	rotation_degrees = lerp(rotation_degrees, target_rotation, delta)
+	global_transform.origin = lerp(global_transform.origin, Vector3.ZERO, 0.3 * delta)
+	if (rotation_degrees - target_rotation).length() < 25.0:
+		random_rotation()
+
+func random_rotation():
+	randomize()
+	target_rotation = Vector3(rand_range(-180, 180), rand_range(-180, 180), rand_range(-180, 180))
+"
+
+[node name="Spatial" type="MeshInstance"]
+mesh = SubResource( 1 )
+material/0 = SubResource( 3 )
+script = SubResource( 2 )

@@ -76,7 +76,7 @@ func die():
 	ObjectPooling.queue_free_instance(self)
 ```
 
-## How does it work?
+# How does it work?
 
 The ObjectPooler scans your Project for scene-Files and then displays them in the UI. Every scene has a number of instances assinged to it. On boot, the ObjectPooler will create that amount of instances for you to use. If you close the UI, it will automatically register itself as an autoload for your convenience.
 
@@ -115,7 +115,7 @@ to avoid weird side effects. You basically reset the entity's variables back to 
 Take note of the AnimationTree here - the tree has a OneShotNode that has call-method-keyframes. If you reactivate it, it will run the
 same method again and to avoid that, you reset the OneShotNode back to false.
 
-## Games using ObjectPooling
+# Games using ObjectPooling
 
 - https://novemberdev.itch.io/tombnight
 - https://play.google.com/store/apps/details?id=com.novemberdev.novemberdevnovrun&hl=en_US&gl=US

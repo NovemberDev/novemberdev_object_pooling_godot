@@ -114,3 +114,8 @@ func on_object_pooling_reset(activate):
 to avoid weird side effects. You basically reset the entity's variables back to their initial state. 
 Take note of the AnimationTree here - the tree has a OneShotNode that has call-method-keyframes. If you reactivate it, it will run the
 same method again and to avoid that, you reset the OneShotNode back to false.
+
+## Games using ObjectPooling
+
+- https://novemberdev.itch.io/tombnight
+- https://play.google.com/store/apps/details?id=com.novemberdev.novemberdevnovrun&hl=en_US&gl=US

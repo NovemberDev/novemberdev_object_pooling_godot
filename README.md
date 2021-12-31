@@ -23,16 +23,16 @@ Closing this will compile and register it as an autoload.
 If you need insights, check DEBUG before closing.
 
 `load("res://scene.tscn").instance()` becomes:
-```
+```python
   ObjectPooling.load_from_pool("res://scene.tscn")
 ```
 `queue_free($SceneInstance)` becomes:
-```
+```python
   ObjectPooling.queue_free_instance($SceneInstance)
 ```
 If you need additional control over what happens, 
 add this method to your root level scene scripts:
-```
+```python
   func on_object_pooling_reset(activate):
     if !activate:
       for obstacle in $OBSTACLES.get_children():
@@ -47,7 +47,7 @@ Common pitfalls:
 
 I spawn a monster:
 
-```
+```python
 func spawn_monster(position: Vector3, health = 300, speed = 25, damage = 30, is_crawler = true):
 	var m = ObjectPooling.load_from_pool("res://scenes/Monster.tscn")
 	m.health = health
@@ -61,7 +61,7 @@ func spawn_monster(position: Vector3, health = 300, speed = 25, damage = 30, is_
 
 Inside the monster script, I reset it's state if it's being reused or call queue_free():
 
-```
+```python
 func on_object_pooling_reset(activate):
 	if !activate:
 		set_process(false)
@@ -97,10 +97,14 @@ This demo uses unique materials on purpose. Godot is very fast at instancing sce
 
 ## October 2021
 
-I create games in godot 3.3.4 and once I reach a certain scale, I still encounter the same performance issues (stuttering). 
-Once I put ObjectPooling in, they completely go away. When you plan on adding it into an existing project, make sure to use the reset function in your script:
+I create games in godot 3.4.2 and once I reach a certain scale, I still encounter the same performance issues (stuttering). 
+Once I put ObjectPooling in, they completely go away. When you plan on adding it into an existing project, make sure to use the reset function in your script.
+In this example, I reuse monsters in the game Tombnight. Whenever they die, I tell the ObjectPooling that they're available again. Whenever I reuse a monster, I reset it's state to avoid side effects:
 
-```
+```python
+func _ready():
+	$model/AnimationTree.active = true
+
 func on_object_pooling_reset(activate):
 	if !activate:
 		set_process(false)
@@ -109,11 +113,46 @@ func on_object_pooling_reset(activate):
 		opacity = 1.0
 		$model/AnimationTree.active = true
 		$model/AnimationTree.set("parameters/die/active", false)
+
+func die():
+	$model/AnimationTree.active = false
+	ObjectPooling.queue_free_instance(self)
 ```
 
-to avoid weird side effects. You basically reset the entity's variables back to their initial state. 
 Take note of the AnimationTree here - the tree has a OneShotNode that has call-method-keyframes. If you reactivate it, it will run the
 same method again and to avoid that, you reset the OneShotNode back to false.
+
+I encountered another pitfall with sound files. Since they're not pooled, you may run into issues. I loop all files in a folder or store the paths as a dictionary and then call load. In this case, I use the web export where the directory traversal is not available, so I statically store the paths in an array:
+
+```python
+var sounds = {}
+var sound_paths = [
+	"res://assets/sounds/ambient.ogg",
+"res://assets/sounds/boot_0.ogg",
+"res://assets/sounds/boot_1.ogg"]
+
+func _init():
+	for sound_path in sound_paths:
+		sounds[sound_path] = load(sound_path)
+
+func get_sound(path):
+	if sounds.has(path):
+		return sounds[path]
+	print("Cache miss for sound: " + path)
+	return load(path)
+
+func play_sound(sound_name, pitch = 1.0):
+	var pl = AudioStreamPlayer.new()
+	pl.connect("finished", self, "on_audio_finished", [pl])
+	pl.stream = get_sound("res://assets/sounds/" + sound_name + ".ogg")
+	get_node("/root").add_child(pl)
+	pl.volume_db = settings_sfx_level
+	pl.pitch_scale = pitch
+	pl.play()
+	audio_players.push_back(pl)
+```
+
+To avoid doing this, you may want to create a proper .tscn which can be object pooled.
 
 # Games using ObjectPooling
 

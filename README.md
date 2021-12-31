@@ -118,9 +118,6 @@ same method again and to avoid that, you reset the OneShotNode back to false.
 # Games using ObjectPooling
 
 - https://novemberdev.itch.io/tombnight
-(**Disclaimer:** the **first 2 enemies** are **not** object pooled to show you how much of a difference this makes.
-Object pooling is enabled on the **final red arena** part)
-
-
+(~~the first 2 enemies are not object pooled~~ **Edit:** I decided to use ObjectPooling on every part)
 
 - https://play.google.com/store/apps/details?id=com.novemberdev.novemberdevnovrun&hl=en_US&gl=US
